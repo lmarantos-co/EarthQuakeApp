@@ -8,4 +8,5 @@ object SettingsManager {
     var nearbyQuakesRadius : Int = 100
     var nearbyQuakesMinMag : Float = 4.0f
     var nearbyQuakesPeriod : QuakePeriod = QuakePeriod.ALL_MONTH
+    var quakeAlert : Boolean = true
 }

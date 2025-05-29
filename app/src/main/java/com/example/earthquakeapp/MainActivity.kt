@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.Checkbox
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Slider
 import androidx.compose.material.Surface
@@ -50,6 +51,7 @@ import androidx.compose.material3.TextFieldColors
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -98,7 +100,7 @@ class MainActivity : ComponentActivity() {
 
         val repository = QuakeRepo()
         val viewModel = EarthquakeViewModel(repository)
-        scheduleQuakeWork(applicationContext)
+
 
 
         setContent {
@@ -115,8 +117,12 @@ class MainActivity : ComponentActivity() {
                 val nearbyRadiusIntervalState = remember { mutableStateOf(SettingsManager.nearbyQuakesRadius.toLong()) }
                 val nearbyMinMagnitudeState = remember { mutableStateOf(SettingsManager.nearbyQuakesMinMag) }
                 val nearbyQuakesPeriodState = remember { mutableStateOf(SettingsManager.nearbyQuakesPeriod) }
-
+                val quakeAlert = remember {
+                    mutableStateOf<Boolean>(true)
+                }
                 val interval = SettingsManager.pollingInterval.coerceAtLeast(15L)
+
+                    scheduleQuakeWork(applicationContext)
 
                 ModalNavigationDrawer(
                     drawerState = drawerState,
@@ -154,7 +160,8 @@ class MainActivity : ComponentActivity() {
                             onNearbyQuakesPeriodChange = {
                                 nearbyQuakesPeriodState.value = it
                                 SettingsManager.nearbyQuakesPeriod = it
-                            }
+                            },
+                            quakeAlert
                         )
                     }
                 )
@@ -196,6 +203,10 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                     ) { paddingValues ->
+                        if (quakeAlert.value)
+                        {
+                            scheduleQuakeWork(applicationContext)
+                        }
                         NavHost(
                             navController = navController,
                             startDestination = "main",
@@ -244,7 +255,8 @@ fun DrawerContent(
     nearbyQuakesMinMag: String,
     onNearbyQuakesMinMagChange: (String) -> Unit,
     nearbyQuakesPeriod: QuakePeriod,
-    onNearbyQuakesPeriodChange: (QuakePeriod) -> Unit
+    onNearbyQuakesPeriodChange: (QuakePeriod) -> Unit,
+    quakeAlert : MutableState<Boolean>
 ) {
     Column(
         modifier = Modifier
@@ -300,6 +312,15 @@ fun DrawerContent(
             selectedPeriod = nearbyQuakesPeriod,
             onPeriodSelected = onNearbyQuakesPeriodChange
         )
+        Row(horizontalArrangement = Arrangement.Center)
+        {
+            Text(text = "Enable Quake Alerts", fontSize = 18.sp)
+            Checkbox(checked = (SettingsManager.quakeAlert == true),
+                onCheckedChange = {
+                    SettingsManager.quakeAlert = it
+                    quakeAlert.value = it
+                })
+        }
     }
 }
 

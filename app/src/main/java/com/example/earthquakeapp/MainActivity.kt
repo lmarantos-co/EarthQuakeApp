@@ -30,6 +30,7 @@ import androidx.compose.material.Surface
 import androidx.compose.material.TextField
 import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.rememberDrawerState
@@ -84,6 +85,7 @@ import com.example.earthquakeapp.Globals.global_variables
 import com.example.earthquakeapp.Repository.QuakeRepo
 import com.example.earthquakeapp.Screens.EarthquakeMapScreen
 import com.example.earthquakeapp.Screens.NearbyQuakesScreen
+import com.example.earthquakeapp.Screens.QuakesMapScreen
 import com.example.earthquakeapp.ViewModels.EarthquakeViewModel
 import com.example.earthquakeapp.Worker.QuakeWorker
 import com.example.earthquakeapp.ui.theme.EarthQuakeAppTheme
@@ -111,6 +113,7 @@ class MainActivity : ComponentActivity() {
                 val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
                 val scope = rememberCoroutineScope()
                 val navController = rememberNavController()
+                val quakes by viewModel.earthquakeList.collectAsState()
 
                 val pollingIntervalState = remember { mutableStateOf(SettingsManager.pollingInterval) }
                 val minMagnitudeState = remember { mutableStateOf(SettingsManager.pollingMagnitude) }
@@ -121,7 +124,7 @@ class MainActivity : ComponentActivity() {
                     mutableStateOf<Boolean>(true)
                 }
                 val interval = SettingsManager.pollingInterval.coerceAtLeast(15L)
-
+                if (SettingsManager.quakeAlert)
                     scheduleQuakeWork(applicationContext)
 
                 ModalNavigationDrawer(
@@ -198,6 +201,14 @@ class MainActivity : ComponentActivity() {
                                         }, modifier = Modifier.weight(1f)) {
                                             Icon(Icons.Default.LocationOn, contentDescription = "LocationQuakes")
                                         }
+                                        Spacer(modifier = Modifier.width(10.dp).weight(1f))
+                                        IconButton(onClick = {
+                                            scope.launch {
+                                                navController.navigate("map_screen")
+                                            }
+                                        }, modifier = Modifier.weight(1f)) {
+                                            Icon(Icons.Filled.AddCircle, contentDescription = "quakes map markers screen")
+                                        }
                                     }
                                 }
                             )
@@ -234,6 +245,9 @@ class MainActivity : ComponentActivity() {
                                     navController.currentBackStackEntry?.savedStateHandle?.set("quakeProps", clickedQuake)
                                     navController.navigate("map") },
                                     onBackClick = { navController.popBackStack() })
+                            }
+                            composable("map_screen") {
+                                QuakesMapScreen(quakeList = quakes, navController) // pass the list from your ViewModel
                             }
                             }
                         }

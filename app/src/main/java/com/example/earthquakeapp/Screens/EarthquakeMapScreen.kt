@@ -52,11 +52,12 @@ fun EarthquakeMapScreen(
         quakeProps.geometry.coordinates[1].toDouble(),
         quakeProps.geometry.coordinates[0].toDouble()
     )
+
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(epicenter, 6f)
     }
 
-    val markerState = MarkerState(epicenter)
+    val markerState = MarkerState(position = epicenter)
 
     LaunchedEffect(epicenter) {
         cameraPositionState.animate(CameraUpdateFactory.newLatLngZoom(epicenter, 6f))
@@ -70,22 +71,20 @@ fun EarthquakeMapScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceEvenly) {
-                        Text("Location: ${quakeProps.properties.place}", fontSize = 16.sp, modifier = Modifier.weight(1f))
-//                        Spacer(modifier = Modifier.width(8.dp).weight(1f))
-                        Icon(
-                            imageVector = Icons.Default.Info,
-                            contentDescription = "Quake Info",
-                            modifier = Modifier
-                                .size(20.dp).weight(1f)
-                                .clickable { showDetailsDialog = true },
-                            tint = Color.Unspecified
-                        )
-                    }
+                    Text(
+                        text = "Epicenter: ${quakeProps.properties.place}",
+                        fontSize = 16.sp,
+                        maxLines = 1
+                    )
                 },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { showDetailsDialog = true }) {
+                        Icon(Icons.Default.Info, contentDescription = "Earthquake Info")
                     }
                 }
             )
@@ -100,8 +99,7 @@ fun EarthquakeMapScreen(
             Marker(
                 state = markerState,
                 title = quakeProps.properties.place,
-                snippet = "Magnitude: ${quakeProps.properties.mag}",
-                onClick = { false }
+                snippet = "Magnitude: ${quakeProps.properties.mag}"
             )
         }
 
@@ -110,7 +108,7 @@ fun EarthquakeMapScreen(
                 onDismissRequest = { showDetailsDialog = false },
                 title = { Text("Earthquake Details") },
                 text = {
-                    Column {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text("Place: ${quakeProps.properties.place}")
                         Text("Magnitude: ${quakeProps.properties.mag}")
                         Text("Alert Level: ${quakeProps.properties.alertLevel ?: "N/A"}")
@@ -120,7 +118,11 @@ fun EarthquakeMapScreen(
                         Text("Tsunami: ${if (quakeProps.properties.tsuname == 1) "Yes" else "No"}")
                         Text("Significance: ${quakeProps.properties.sig}")
                         Text("Status: ${quakeProps.properties.status}")
-                        Text("Time: ${Instant.ofEpochMilli(quakeProps.properties.time).atZone(ZoneId.systemDefault())}")
+                        Text("Time: ${
+                            Instant.ofEpochMilli(quakeProps.properties.time)
+                                .atZone(ZoneId.systemDefault())
+                                .toLocalDateTime()
+                        }")
                     }
                 },
                 confirmButton = {

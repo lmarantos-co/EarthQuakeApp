@@ -173,42 +173,38 @@ class MainActivity : ComponentActivity() {
                         topBar = {
                             TopAppBar(
                                 title = {
-                                    Row(horizontalArrangement = Arrangement.Center)
-                                    {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.Center,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
                                         Text("Earthquake Tracker")
-                                        Spacer(modifier = Modifier.width(20.dp))
-                                        Icon(imageVector = ImageVector.vectorResource(R.drawable.seismology),
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Icon(
+                                            imageVector = ImageVector.vectorResource(R.drawable.seismology),
                                             contentDescription = "Earthquake Image",
                                             tint = Color.Unspecified
                                         )
                                     }
-                                    },
+                                },
                                 navigationIcon = {
-                                    Row(horizontalArrangement = Arrangement.SpaceEvenly)
-                                    {
-                                        IconButton(onClick = {
-                                            scope.launch {
-                                                drawerState.open()
-                                            }
-                                        }, modifier = Modifier.weight(1f)) {
-                                            Icon(Icons.Default.Menu, contentDescription = "Menu")
-                                        }
-                                        Spacer(modifier = Modifier.width(10.dp).weight(1f))
-                                        IconButton(onClick = {
-                                            scope.launch {
-                                                navController.navigate("nearbyQuakes")
-                                            }
-                                        }, modifier = Modifier.weight(1f)) {
-                                            Icon(Icons.Default.LocationOn, contentDescription = "LocationQuakes")
-                                        }
-                                        Spacer(modifier = Modifier.width(10.dp).weight(1f))
-                                        IconButton(onClick = {
-                                            scope.launch {
-                                                navController.navigate("map_screen")
-                                            }
-                                        }, modifier = Modifier.weight(1f)) {
-                                            Icon(Icons.Filled.AddCircle, contentDescription = "quakes map markers screen")
-                                        }
+                                    IconButton(onClick = {
+                                        scope.launch { drawerState.open() }
+                                    }) {
+                                        Icon(Icons.Default.Menu, contentDescription = "Menu")
+                                    }
+                                },
+                                actions = {
+                                    IconButton(onClick = {
+                                        scope.launch { navController.navigate("nearbyQuakes") }
+                                    }) {
+                                        Icon(Icons.Default.LocationOn, contentDescription = "Nearby Quakes")
+                                    }
+
+                                    IconButton(onClick = {
+                                        scope.launch { navController.navigate("map_screen") }
+                                    }) {
+                                        Icon(Icons.Filled.AddCircle, contentDescription = "Quake Map Markers")
                                     }
                                 }
                             )

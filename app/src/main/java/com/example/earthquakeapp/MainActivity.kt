@@ -29,6 +29,7 @@ import androidx.compose.material.Surface
 import androidx.compose.material.TextField
 import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.material3.Button
@@ -80,6 +81,7 @@ import com.example.earthquakeapp.Globals.SettingsManager
 import com.example.earthquakeapp.Globals.global_variables
 import com.example.earthquakeapp.Repository.QuakeRepo
 import com.example.earthquakeapp.Screens.EarthquakeMapScreen
+import com.example.earthquakeapp.Screens.NearbyQuakesScreen
 import com.example.earthquakeapp.ViewModels.EarthquakeViewModel
 import com.example.earthquakeapp.Worker.QuakeWorker
 import com.example.earthquakeapp.ui.theme.EarthQuakeAppTheme
@@ -107,8 +109,8 @@ class MainActivity : ComponentActivity() {
                 val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
                 val scope = rememberCoroutineScope()
                 val navController = rememberNavController()
-                val pollingIntervalState = remember { mutableStateOf<Long>(global_variables().polling_interval.toLong()) }
-                val minMagnitudeState = remember { mutableStateOf<Float>(4.0f) }
+                val pollingIntervalState = remember { mutableStateOf<Long>(SettingsManager.pollingInterval) }
+                val minMagnitudeState = remember { mutableStateOf<Float>(SettingsManager.pollingMagnitude) }
 
                 val interval = SettingsManager.pollingInterval.coerceAtLeast(15L)
 
@@ -140,12 +142,23 @@ class MainActivity : ComponentActivity() {
                                     }
                                     },
                                 navigationIcon = {
-                                    IconButton(onClick = {
-                                        scope.launch {
-                                            drawerState.open()
+                                    Row(horizontalArrangement = Arrangement.SpaceEvenly)
+                                    {
+                                        IconButton(onClick = {
+                                            scope.launch {
+                                                drawerState.open()
+                                            }
+                                        }, modifier = Modifier.weight(1f)) {
+                                            Icon(Icons.Default.Menu, contentDescription = "Menu")
                                         }
-                                    }) {
-                                        Icon(Icons.Default.Menu, contentDescription = "Menu")
+                                        Spacer(modifier = Modifier.width(10.dp).weight(1f))
+                                        IconButton(onClick = {
+                                            scope.launch {
+                                                navController.navigate("nearbyQuakes")
+                                            }
+                                        }, modifier = Modifier.weight(1f)) {
+                                            Icon(Icons.Default.LocationOn, contentDescription = "LocationQuakes")
+                                        }
                                     }
                                 }
                             )
@@ -173,13 +186,19 @@ class MainActivity : ComponentActivity() {
                                     Text("Earthquake details not available.")
                                 }
                             }
+                            composable("nearbyQuakes") {
+                                NearbyQuakesScreen(viewModel , onQuakeClick =  { clickedQuake ->
+                                    navController.currentBackStackEntry?.savedStateHandle?.set("quakeProps", clickedQuake)
+                                    navController.navigate("map") },
+                                    onBackClick = { navController.popBackStack() })
+                            }
+                            }
                         }
                     }
                 }
             }
         }
     }
-}
 
 //drawer screen
 @Composable

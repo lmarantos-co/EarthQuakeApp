@@ -26,6 +26,8 @@ class EarthquakeViewModel(private val repository: QuakeRepo) : ViewModel() {
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
+
+
     // Filters
     var minMagnitude by mutableStateOf<Float?>(null)
     var locationFilter by mutableStateOf<String?>(null)
@@ -34,6 +36,8 @@ class EarthquakeViewModel(private val repository: QuakeRepo) : ViewModel() {
     //polling variables
     var polling_interval by mutableStateOf<Int?>(null)
     var polling_magintude by mutableStateOf<Float?>(null)
+
+
 
     fun loadEarthquakes(period: String = "all_hour") {
         viewModelScope.launch {
@@ -51,9 +55,10 @@ class EarthquakeViewModel(private val repository: QuakeRepo) : ViewModel() {
                     magOk as Boolean && locationOk as Boolean
                 }
                     _earthquakeList.value = filtered
+                    _error.value = null
             }.onFailure { exception ->
                 Log.d("API","Api error:${exception.localizedMessage!!}")
-                _error.value = exception.localizedMessage
+                _error.value = result.exceptionOrNull()?.localizedMessage ?: "Unknown error"
             }
         }
     }

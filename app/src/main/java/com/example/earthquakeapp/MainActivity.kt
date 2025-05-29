@@ -109,8 +109,12 @@ class MainActivity : ComponentActivity() {
                 val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
                 val scope = rememberCoroutineScope()
                 val navController = rememberNavController()
-                val pollingIntervalState = remember { mutableStateOf<Long>(SettingsManager.pollingInterval) }
-                val minMagnitudeState = remember { mutableStateOf<Float>(SettingsManager.pollingMagnitude) }
+
+                val pollingIntervalState = remember { mutableStateOf(SettingsManager.pollingInterval) }
+                val minMagnitudeState = remember { mutableStateOf(SettingsManager.pollingMagnitude) }
+                val nearbyRadiusIntervalState = remember { mutableStateOf(SettingsManager.nearbyQuakesRadius.toLong()) }
+                val nearbyMinMagnitudeState = remember { mutableStateOf(SettingsManager.nearbyQuakesMinMag) }
+                val nearbyQuakesPeriodState = remember { mutableStateOf(SettingsManager.nearbyQuakesPeriod) }
 
                 val interval = SettingsManager.pollingInterval.coerceAtLeast(15L)
 
@@ -119,13 +123,41 @@ class MainActivity : ComponentActivity() {
                     drawerContent = {
                         DrawerContent(
                             pollingInterval = pollingIntervalState.value.toString(),
-                            onPollingIntervalChange = { pollingIntervalState.value = it.toLong()
-                                                      SettingsManager.pollingInterval = it.toLong()},
+                            onPollingIntervalChange = {
+                                it.toLongOrNull()?.let { value ->
+                                    pollingIntervalState.value = value
+                                    SettingsManager.pollingInterval = value
+                                }
+                            },
                             minMagnitude = minMagnitudeState.value.toString(),
-                            onMinMagnitudeChange = { minMagnitudeState.value = it.toFloat()
-                                SettingsManager.pollingMagnitude = it.toFloat()}
+                            onMinMagnitudeChange = {
+                                it.toFloatOrNull()?.let { value ->
+                                    minMagnitudeState.value = value
+                                    SettingsManager.pollingMagnitude = value
+                                }
+                            },
+                            nearbyQuakesRadius = nearbyRadiusIntervalState.value.toString(),
+                            onNearbyQuakesRadiusChange = {
+                                it.toLongOrNull()?.let { value ->
+                                    nearbyRadiusIntervalState.value = value
+                                    SettingsManager.nearbyQuakesRadius = value.toInt()
+                                }
+                            },
+                            nearbyQuakesMinMag = nearbyMinMagnitudeState.value.toString(),
+                            onNearbyQuakesMinMagChange = {
+                                it.toFloatOrNull()?.let { value ->
+                                    nearbyMinMagnitudeState.value = value
+                                    SettingsManager.nearbyQuakesMinMag = value
+                                }
+                            },
+                            nearbyQuakesPeriod = nearbyQuakesPeriodState.value,
+                            onNearbyQuakesPeriodChange = {
+                                nearbyQuakesPeriodState.value = it
+                                SettingsManager.nearbyQuakesPeriod = it
+                            }
                         )
-                    })
+                    }
+                )
                  {
                     Scaffold(
                         topBar = {
@@ -206,7 +238,13 @@ fun DrawerContent(
     pollingInterval: String,
     onPollingIntervalChange: (String) -> Unit,
     minMagnitude: String,
-    onMinMagnitudeChange: (String) -> Unit
+    onMinMagnitudeChange: (String) -> Unit,
+    nearbyQuakesRadius: String,
+    onNearbyQuakesRadiusChange: (String) -> Unit,
+    nearbyQuakesMinMag: String,
+    onNearbyQuakesMinMagChange: (String) -> Unit,
+    nearbyQuakesPeriod: QuakePeriod,
+    onNearbyQuakesPeriodChange: (QuakePeriod) -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -214,7 +252,8 @@ fun DrawerContent(
             .padding(16.dp)
             .background(color = Color.White),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Top) {
+        verticalArrangement = Arrangement.Top
+    ) {
         Spacer(modifier = Modifier.height(20.dp))
         Text(text = "Application Settings", fontSize = 24.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(24.dp))
@@ -235,8 +274,35 @@ fun DrawerContent(
             keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
             singleLine = true
         )
+        Spacer(modifier = Modifier.height(24.dp))
+
+        OutlinedTextField(
+            value = nearbyQuakesRadius,
+            onValueChange = onNearbyQuakesRadiusChange,
+            label = { Text("Nearby Quakes Radius (km)") }, // <-- Fixed label
+            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
+            singleLine = true
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+
+        OutlinedTextField(
+            value = nearbyQuakesMinMag,
+            onValueChange = onNearbyQuakesMinMagChange,
+            label = { Text("Minimum Nearby Quake Magnitude") },
+            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
+            singleLine = true
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(text = "Time Period For Nearby Quakes", fontSize = 18.sp)
+        Spacer(modifier = Modifier.height(4.dp))
+        QuakePeriodDropdown(
+            selectedPeriod = nearbyQuakesPeriod,
+            onPeriodSelected = onNearbyQuakesPeriodChange
+        )
     }
 }
+
 
 
 

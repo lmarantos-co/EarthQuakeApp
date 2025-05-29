@@ -14,8 +14,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.toLowerCase
 import androidx.compose.ui.unit.dp
 import com.example.earthquakeapp.Data.features
+import com.example.earthquakeapp.Globals.SettingsManager
 import com.example.earthquakeapp.ViewModels.EarthquakeViewModel
 import com.google.accompanist.permissions.*
 import com.google.android.gms.location.*
@@ -29,33 +31,46 @@ import kotlin.math.*
 fun NearbyQuakesScreen(
     viewModel: EarthquakeViewModel,
     onQuakeClick: (features) -> Unit,
-    onBackClick: () -> Unit // <-- Add this callback for back navigation
+    onBackClick: () -> Unit
 ) {
     val context = LocalContext.current
     val locationPermissionState = rememberPermissionState(Manifest.permission.ACCESS_FINE_LOCATION)
     val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
 
     var userLocation by remember { mutableStateOf<LatLng?>(null) }
-    var filteredQuakes by remember { mutableStateOf<List<features>>(emptyList()) }
+    var showFiltered by remember { mutableStateOf(false) }
 
     val earthquakeList by viewModel.earthquakeList.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
 
-    LaunchedEffect(locationPermissionState.status.isGranted, earthquakeList) {
+    // 1. Load earthquake data based on settings when the screen enters
+    LaunchedEffect(Unit) {
+        viewModel.loadEarthquakes(SettingsManager.nearbyQuakesPeriod.toString().lowercase())
+    }
+
+    // 2. Try getting location only if permission is granted
+    LaunchedEffect(locationPermissionState.status) {
         if (locationPermissionState.status.isGranted) {
             fusedLocationClient.lastLocation.addOnSuccessListener { location ->
                 if (location != null) {
                     userLocation = LatLng(location.latitude, location.longitude)
-                    filteredQuakes = filterQuakesNearLocation(
-                        earthquakeList,
-                        location.latitude,
-                        location.longitude,
-                        100.0 // radius in km
-                    )
+                    showFiltered = true
                 }
             }
         }
+    }
+
+    // 3. Optional filtering
+    val filteredQuakes = remember(earthquakeList to userLocation) {
+        userLocation?.let { location ->
+            filterQuakesNearLocation(
+                earthquakeList,
+                location.latitude,
+                location.longitude,
+                SettingsManager.nearbyQuakesRadius.toDouble()
+            )
+        } ?: emptyList()
     }
 
     Scaffold(
@@ -64,19 +79,17 @@ fun NearbyQuakesScreen(
                 title = { Text("Nearby Earthquakes") },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back"
-                        )
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
         }
     ) { innerPadding ->
-        Column(modifier = Modifier
-            .padding(innerPadding)
-            .fillMaxSize()
-            .padding(16.dp)
+        Column(
+            modifier = Modifier
+                .padding(innerPadding)
+                .fillMaxSize()
+                .padding(16.dp)
         ) {
             when {
                 isLoading -> {
@@ -101,23 +114,25 @@ fun NearbyQuakesScreen(
                     }
                 }
 
-                userLocation == null -> {
-                    Text("Getting your location...", modifier = Modifier.align(Alignment.CenterHorizontally))
+                earthquakeList.isEmpty() -> {
+                    Text("No earthquakes found for the selected period.", modifier = Modifier.align(Alignment.CenterHorizontally))
                 }
 
-                filteredQuakes.isEmpty() -> {
-                    Text("No earthquakes nearby in the last period.", modifier = Modifier.align(Alignment.CenterHorizontally))
+                showFiltered && filteredQuakes.isEmpty() -> {
+                    Text("No nearby earthquakes found.", modifier = Modifier.align(Alignment.CenterHorizontally))
                 }
 
                 else -> {
-                    Text(
-                        text = "Your Location: ${userLocation!!.latitude}, ${userLocation!!.longitude}",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
+                    userLocation?.let {
+                        Text(
+                            text = "Your Location: ${it.latitude}, ${it.longitude}",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
 
                     LazyColumn {
-                        items(filteredQuakes) { quake ->
+                        items(if (showFiltered) filteredQuakes else earthquakeList) { quake ->
                             EarthquakeItem(quake = quake, onClick = { onQuakeClick(quake) })
                             Divider()
                         }
@@ -127,6 +142,7 @@ fun NearbyQuakesScreen(
         }
     }
 }
+
 
 @Composable
 fun EarthquakeItem(quake: features, onClick: () -> Unit) {
@@ -167,7 +183,7 @@ fun filterQuakesNearLocation(
         val quakeLat = quake.geometry.coordinates.getOrNull(1)?.toDouble() ?: 0.0
         val quakeLng = quake.geometry.coordinates.getOrNull(0)?.toDouble() ?: 0.0
         val distance = calculateDistance(userLat, userLng, quakeLat, quakeLng)
-        distance <= radiusKm
+        (distance <= radiusKm) && (quake.properties.mag >= SettingsManager.nearbyQuakesMinMag)
     }
 }
 

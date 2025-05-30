@@ -14,4 +14,22 @@ class QuakeRepo {
             Result.failure(e)
         }
     }
+
+    suspend fun getEarthquakes(
+        startTime: String,
+        endTime: String,
+        minMagnitude: Double = 2.5
+    ): Result<EarthQuakeResponse> {
+        return try {
+            val response = RetrofitClient.apiService.getEarthquakes(
+                startTime = startTime,
+                endTime = endTime,
+                minMagnitude = minMagnitude
+            )
+            Result.success(response)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
 }

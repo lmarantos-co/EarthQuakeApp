@@ -31,6 +31,7 @@ import androidx.compose.material.TextField
 import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.rememberDrawerState
@@ -85,8 +86,10 @@ import com.example.earthquakeapp.Globals.global_variables
 import com.example.earthquakeapp.Repository.QuakeRepo
 import com.example.earthquakeapp.Screens.EarthquakeMapScreen
 import com.example.earthquakeapp.Screens.NearbyQuakesScreen
+import com.example.earthquakeapp.Screens.QuakeHistoryScreen
 import com.example.earthquakeapp.Screens.QuakesMapScreen
 import com.example.earthquakeapp.ViewModels.EarthquakeViewModel
+import com.example.earthquakeapp.ViewModels.QuakeHistoryViewModel
 import com.example.earthquakeapp.Worker.QuakeWorker
 import com.example.earthquakeapp.ui.theme.EarthQuakeAppTheme
 import kotlinx.coroutines.launch
@@ -102,7 +105,7 @@ class MainActivity : ComponentActivity() {
 
         val repository = QuakeRepo()
         val viewModel = EarthquakeViewModel(repository)
-
+        val historyViewModel = QuakeHistoryViewModel(repository)
 
 
         setContent {
@@ -123,9 +126,23 @@ class MainActivity : ComponentActivity() {
                 val quakeAlert = remember {
                     mutableStateOf<Boolean>(true)
                 }
+                val quakeAlertMag = remember {
+                    mutableStateOf<Float>(SettingsManager.pollingMagnitude)
+                }
+
+                val quakeAlertPeriod = remember {
+                    mutableStateOf<Long>(SettingsManager.pollingInterval)
+                }
                 val interval = SettingsManager.pollingInterval.coerceAtLeast(15L)
-                if (SettingsManager.quakeAlert)
-                    scheduleQuakeWork(applicationContext)
+                LaunchedEffect(
+                    SettingsManager.quakeAlert,
+                    quakeAlertMag.value,
+                    quakeAlertPeriod.value
+                ) {
+                    if (SettingsManager.quakeAlert) {
+                        scheduleQuakeWork(applicationContext)
+                    }
+                }
 
                 ModalNavigationDrawer(
                     drawerState = drawerState,
@@ -206,6 +223,12 @@ class MainActivity : ComponentActivity() {
                                     }) {
                                         Icon(Icons.Filled.AddCircle, contentDescription = "Quake Map Markers")
                                     }
+
+                                    IconButton(onClick = {
+                                        scope.launch { navController.navigate("history") }
+                                    }) {
+                                        Icon(Icons.Filled.DateRange, contentDescription = "History Quakes")
+                                    }
                                 }
                             )
                         }
@@ -244,6 +267,9 @@ class MainActivity : ComponentActivity() {
                             }
                             composable("map_screen") {
                                 QuakesMapScreen(quakeList = quakes, navController) // pass the list from your ViewModel
+                            }
+                            composable("history") {
+                                QuakeHistoryScreen(historyViewModel)
                             }
                             }
                         }

@@ -16,7 +16,9 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-    }
+        jcenter() // Warning: this repository is going to shut down soon
+        mavenCentral()
+        maven { url = uri("https://jitpack.io") }    }
 }
 
 rootProject.name = "EarthQuakeApp"

@@ -86,5 +86,9 @@ dependencies {
     implementation("com.google.accompanist:accompanist-permissions:0.30.1")
     implementation ("com.google.android.gms:play-services-location:21.0.1")
 
+    //mpandroidchart
+    implementation(libs.mpandroidchart)
+
+
 
 }
